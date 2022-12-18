@@ -1,0 +1,221 @@
+<!doctype html><html lang=zh-cn dir=content/zh-cn><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge,chrome=1"><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv=content-security-policy content="upgrade-insecure-requests"><title>Etcd在go中的使用 - 孤独前行</title><meta name=keywords content="程序猿,思考,读书,笔记,技术,分享"><meta name=author content="玄武"><meta property="og:title" content="Etcd在go中的使用"><meta property="og:site_name" content="孤独前行"><meta property="og:image" content="/img/author.jpg"><meta name=title content="Etcd在go中的使用 - 孤独前行"><meta name=description content="Etcd的简介和使用"><link rel="shortcut icon" href=/img/favicon.ico><link rel=apple-touch-icon href=/img/apple-touch-icon.png><link rel=apple-touch-icon-precomposed href=/img/apple-touch-icon.png><link href=//unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css rel=stylesheet type=text/css><link href=//unpkg.com/imageviewer@1.1.0/dist/viewer.min.css rel=stylesheet><link href=/css/main.css rel=stylesheet type=text/css><link href=/css/syntax.css rel=stylesheet type=text/css></head><body itemscope itemtype=http://schema.org/WebPage lang=zh-hans><div class="container one-collumn sidebar-position-left page-home"><div class=headband></div><header id=header class=header itemscope itemtype=http://schema.org/WPHeader><div class=header-inner><div class=site-brand-container><div class=site-nav-toggle><div class=toggle role=button style=opacity:1;top:0><span class=toggle-line></span>
+<span class=toggle-line></span>
+<span class=toggle-line></span></div></div><div class=site-meta><div class=custom-logo-site-title><a href=/ class=brand rel=start><span class=logo-line-before><i></i></span>
+<span class=site-title>孤独前行</span>
+<span class=logo-line-after><i></i></span></a></div><p class=site-subtitle>心即理 知行合一 致良知</p></div><div class=site-nav-right><div class="toggle popup-trigger" style=opacity:1;top:0><i class="fa fa-search fa-fw fa-lg"></i></div></div></div><nav class=site-nav><ul id=menu class=menu><li class=menu-item><a href=/ rel=section><i class="menu-item-icon fa fa-fw fa-home"></i><br>首页</a></li><li class="menu-item menu-item-active"><a href=/post rel=section><i class="menu-item-icon fa fa-fw fa-archive"></i><br>归档</a></li><li class=menu-item><a href=/about.html rel=section><i class="menu-item-icon fa fa-fw fa-user"></i><br>关于我</a></li><li class=menu-item><a href=/404.html rel=section><i class="menu-item-icon fa fa-fw fa-heartbeat"></i><br>公益404</a></li><li class="menu-item menu-item-search"><a href=javascript:; class=popup-trigger><i class="menu-item-icon fa fa-search fa-fw"></i><br>搜索</a></li></ul><div class=site-search><div class="popup search-popup local-search-popup"><div class="local-search-header clearfix"><span class=search-icon><i class="fa fa-search"></i></span>
+<span class=popup-btn-close><i class="fa fa-times-circle"></i></span><div class=local-search-input-wrapper><input autocomplete=off placeholder=搜索关键字... spellcheck=false type=text id=local-search-input autocapitalize=none autocorrect=off></div></div><div id=local-search-result></div></div></div></nav></div></header><main id=main class=main><div class=main-inner><div class=content-wrap><div id=content class=content><section id=posts class=posts-expand><article class="post post-type-normal" itemscope itemtype=http://schema.org/Article><header class=post-header><h1 class=post-title itemprop="name headline"><a class=post-title-link href=/post/golang/etcd/ itemprop=url>Etcd在go中的使用</a></h1><div class=post-meta><span class=post-pushdate><i class="fa fa-calendar-o fa-fw"></i>
+<span class=post-meta-item-text>时间：</span>
+<time itemprop=dateCreated datetime=2016-03-22T13:04:35+08:00 content="2018-03-01">2018-03-01</time></span>
+<span class=post-category><i class="fa fa-folder-o fa-fw"></i>
+<span class=post-meta-item-text>分类：</span>
+<span itemprop=about itemscope itemtype=https://schema.org/Thing><a class=post-category-a href=/categories/golang itemprop=url rel=index><span itemprop=name>golang</span></a>
+&nbsp;</span></span>
+<span class=post-wordcount><i class="fa fa-file-word-o fa-fw"></i>
+<span class=post-meta-item-text>字数：</span>
+<span class=leancloud-world-count>961 字</span></span>
+<span class=post-readtime><i class="fa fa-eye fa-fw"></i>
+<span class=post-meta-item-text>阅读：</span>
+<span class=leancloud-view-count>2分钟</span></span>
+<span id=/post/golang/etcd/ class="leancloud_visitors post-visitor" data-flag-title=Etcd在go中的使用><i class="fa fa-binoculars fa-fw"></i>
+<span class=post-meta-item-text>阅读次数：</span>
+<span class=leancloud-visitors-count></span></span></div></header><div class=post-body itemprop=articleBody><h2 id=etcd-介绍>Etcd 介绍</h2><p>etcd 是一个高可用的分布式键值(key-value)存储数据库。具有以下特点:</p><ul><li>简单：安装配置简单，而且提供了 HTTP API 进行交互，使用也很简单</li><li>键值对存储：将数据存储在分层组织的目录中，如同在标准文件系统中</li><li>监测变更：监测特定的键或目录以进行更改，并对值的更改做出反应</li><li>安全：支持 SSL 证书验证</li><li>快速：根据官方提供的 benchmark 数据，单实例支持每秒 2k+ 读操作</li><li>可靠：采用 raft 算法，实现分布式系统数据的可用性和一致性</li></ul><h2 id=使用场景>使用场景</h2><ul><li>服务注册和发现</li><li>键值对存储</li><li>消息的发布和订阅</li><li>分布式通知与协调</li><li>分布式锁</li></ul><h2 id=技术选型>技术选型</h2><table><thead><tr><th>名称</th><th>优点</th><th>缺点</th><th>接口</th><th>一致性算法</th></tr></thead><tbody><tr><td><div style=width:60pt>zookeeper</div></td><td><div style=width:120pt>1.功能强大，不仅仅只是服务发现 2.提供watcher机制能实时获取服务提供者的状态 3.dubbo等框架支持</div></td><td><div style=width:70pt>1.没有健康检查2.需在服务中集成sdk，复杂度高3.不支持多数据中心</div></td><td><div style=width:60pt>sdk</div></td><td>Paxos</td></tr><tr><td>consul</td><td>1.简单易用，不需要集成sdk2.自带健康检查3.支持多数据中心4.提供web管理界面</td><td>1.不能实时获取服务信息的变化通知</td><td>http/dns</td><td>Raft</td></tr><tr><td>etcd</td><td>1.简单易用，不需要集成sdk2.可配置性强</td><td>1.没有健康检查2.需配合第三方工具一起完成服务发现3.不支持多数据中心</td><td>http</td><td>Raft</td></tr></tbody></table><h2 id=etcd-安装>etcd 安装</h2><ol><li>源码安装
+使用源码安装需要先安装go语言环境</li></ol><div class=highlight><pre tabindex=0 style=background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>git clone https://github.com/etcd-io/etcd.git
+</span></span><span style=display:flex><span>cd etcd
+</span></span><span style=display:flex><span>./build
+</span></span></code></pre></div><p>执行如下测试命令，确保安装成功</p><div class=highlight><pre tabindex=0 style=background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>$ ./etcdctl version
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>etcdctl version: 3.4.4
+</span></span><span style=display:flex><span>API version: 3.4
+</span></span></code></pre></div><ol start=2><li>docker 安装
+单节点安装</li></ol><div class=highlight><pre tabindex=0 style=background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>version: &#39;3&#39;
+</span></span><span style=display:flex><span>networks:
+</span></span><span style=display:flex><span>  myetcd_single:
+</span></span><span style=display:flex><span>services:
+</span></span><span style=display:flex><span>  etcd:
+</span></span><span style=display:flex><span>    image: quay.io/coreos/etcd
+</span></span><span style=display:flex><span>    container_name: etcd_single
+</span></span><span style=display:flex><span>    command: etcd -name etcd1 -advertise-client-urls http://0.0.0.0:2379 -listen-client-urls http://0.0.0.0:2379 -listen-peer-urls http://0.0.0.0:2380
+</span></span><span style=display:flex><span>    ports:
+</span></span><span style=display:flex><span>      - 12379:2379
+</span></span><span style=display:flex><span>      - 12380:2380
+</span></span><span style=display:flex><span>    volumes:
+</span></span><span style=display:flex><span>      - ./data:/etcd-data
+</span></span><span style=display:flex><span>    networks:
+</span></span><span style=display:flex><span>      - myetcd_single
+</span></span><span style=display:flex><span>  etcdkeeper:
+</span></span><span style=display:flex><span>    image: deltaprojects/etcdkeeper
+</span></span><span style=display:flex><span>    container_name: etcdkeeper_single
+</span></span><span style=display:flex><span>    ports:
+</span></span><span style=display:flex><span>      - 8088:8080
+</span></span><span style=display:flex><span>    networks:
+</span></span><span style=display:flex><span>      - myetcd_single
+</span></span><span style=display:flex><span>      
+</span></span></code></pre></div><p>集群安装</p><div class=highlight><pre tabindex=0 style=background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>version: &#39;3&#39;
+</span></span><span style=display:flex><span>networks:
+</span></span><span style=display:flex><span>  myetcd:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>services:
+</span></span><span style=display:flex><span>  etcd1:
+</span></span><span style=display:flex><span>    image: quay.io/coreos/etcd:v3.5.1
+</span></span><span style=display:flex><span>    container_name: etcd1
+</span></span><span style=display:flex><span>    command: etcd -name etcd1 -advertise-client-urls http://0.0.0.0:2379 -listen-client-urls http://0.0.0.0:2379 -listen-peer-urls http://0.0.0.0:2380 -initial-cluster-token etcd-cluster -initial-cluster &#34;etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380&#34; -initial-cluster-state new
+</span></span><span style=display:flex><span>    ports:
+</span></span><span style=display:flex><span>      - 12379:2379
+</span></span><span style=display:flex><span>      - 12380:2380
+</span></span><span style=display:flex><span>    volumes:
+</span></span><span style=display:flex><span>      - ./data/etcd1:/etcd-data
+</span></span><span style=display:flex><span>    networks:
+</span></span><span style=display:flex><span>      - myetcd
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>  etcd2:
+</span></span><span style=display:flex><span>    image: quay.io/coreos/etcd:v3.5.1
+</span></span><span style=display:flex><span>    container_name: etcd2
+</span></span><span style=display:flex><span>    command: etcd -name etcd2 -advertise-client-urls http://0.0.0.0:2379 -listen-client-urls http://0.0.0.0:2379 -listen-peer-urls http://0.0.0.0:2380 -initial-cluster-token etcd-cluster -initial-cluster &#34;etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380&#34; -initial-cluster-state new
+</span></span><span style=display:flex><span>    ports:
+</span></span><span style=display:flex><span>      - 22379:2379
+</span></span><span style=display:flex><span>      - 22380:2380
+</span></span><span style=display:flex><span>    volumes:
+</span></span><span style=display:flex><span>      - ./data/etcd2:/etcd-data
+</span></span><span style=display:flex><span>    networks:
+</span></span><span style=display:flex><span>      - myetcd
+</span></span><span style=display:flex><span>  
+</span></span><span style=display:flex><span>  etcd3:
+</span></span><span style=display:flex><span>    image: quay.io/coreos/etcd:v3.5.1
+</span></span><span style=display:flex><span>    container_name: etcd3
+</span></span><span style=display:flex><span>    command: etcd -name etcd3 -advertise-client-urls http://0.0.0.0:2379 -listen-client-urls http://0.0.0.0:2379 -listen-peer-urls http://0.0.0.0:2380 -initial-cluster-token etcd-cluster -initial-cluster &#34;etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380&#34; -initial-cluster-state new
+</span></span><span style=display:flex><span>    ports:
+</span></span><span style=display:flex><span>      - 32379:2379
+</span></span><span style=display:flex><span>      - 32380:2380
+</span></span><span style=display:flex><span>    volumes:
+</span></span><span style=display:flex><span>      - ./data/etcd3:/etcd-data
+</span></span><span style=display:flex><span>    networks:
+</span></span><span style=display:flex><span>      - myetcd
+</span></span><span style=display:flex><span>      
+</span></span><span style=display:flex><span>  etcdkeeper:
+</span></span><span style=display:flex><span>    image: deltaprojects/etcdkeeper
+</span></span><span style=display:flex><span>    container_name: etcdkeeper
+</span></span><span style=display:flex><span>    ports:
+</span></span><span style=display:flex><span>      - 8088:8080
+</span></span><span style=display:flex><span>    networks:
+</span></span><span style=display:flex><span>      - myetcd
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>执行 docker-compose up -d 命令自动安装
+</span></span></code></pre></div><h2 id=etcd-使用示例>etcd 使用示例</h2><div class=highlight><pre tabindex=0 style=background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#a2f;font-weight:700>package</span> main
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a2f;font-weight:700>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#b44>&#34;context&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#b44>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#b44>&#34;time&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#b44>&#34;go.etcd.io/etcd/clientv3&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a2f;font-weight:700>func</span> <span style=color:#00a000>main</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#080;font-style:italic>// 初始化etcd客户端
+</span></span></span><span style=display:flex><span><span style=color:#080;font-style:italic></span>	cli, err <span style=color:#666>:=</span> clientv3.<span style=color:#00a000>New</span>(clientv3.Config{
+</span></span><span style=display:flex><span>		Endpoints:   []<span style=color:#0b0;font-weight:700>string</span>{<span style=color:#b44>&#34;localhost:12379&#34;</span>},
+</span></span><span style=display:flex><span>		DialTimeout: <span style=color:#666>5</span> <span style=color:#666>*</span> time.Second,
+</span></span><span style=display:flex><span>	})
+</span></span><span style=display:flex><span>	
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>if</span> err <span style=color:#666>!=</span> <span style=color:#a2f;font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		fmt.<span style=color:#00a000>Println</span>(<span style=color:#b44>&#34;connect failed, err:&#34;</span>, err)
+</span></span><span style=display:flex><span>		<span style=color:#a2f;font-weight:700>return</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	
+</span></span><span style=display:flex><span>	<span style=color:#00a000>Put</span>(cli, <span style=color:#b44>&#34;/node/node1&#34;</span>, <span style=color:#b44>&#34;server info node1&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#00a000>Put</span>(cli, <span style=color:#b44>&#34;/node/node2&#34;</span>, <span style=color:#b44>&#34;server info node2&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#00a000>Put</span>(cli, <span style=color:#b44>&#34;/node/node3&#34;</span>, <span style=color:#b44>&#34;server info node3&#34;</span>)
+</span></span><span style=display:flex><span>	
+</span></span><span style=display:flex><span>    <span style=color:#00a000>Get</span>(cli, <span style=color:#b44>&#34;/node/node1&#34;</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#080;font-style:italic>// 存储一个key value
+</span></span></span><span style=display:flex><span><span style=color:#080;font-style:italic></span><span style=color:#a2f;font-weight:700>func</span> <span style=color:#00a000>Put</span>(c <span style=color:#666>*</span>clientv3.Client, key <span style=color:#0b0;font-weight:700>string</span>, value <span style=color:#0b0;font-weight:700>string</span>) {
+</span></span><span style=display:flex><span>	ctx, cancel <span style=color:#666>:=</span> context.<span style=color:#00a000>WithTimeout</span>(context.<span style=color:#00a000>Background</span>(), time.Second)
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>defer</span> <span style=color:#00a000>cancel</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	putResp, err <span style=color:#666>:=</span> c.<span style=color:#00a000>Put</span>(ctx, key, value)
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>if</span> err <span style=color:#666>!=</span> <span style=color:#a2f;font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		fmt.<span style=color:#00a000>Println</span>(<span style=color:#b44>&#34;etcd put err =&gt; &#34;</span>, err)
+</span></span><span style=display:flex><span>		<span style=color:#a2f;font-weight:700>return</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	
+</span></span><span style=display:flex><span>	fmt.<span style=color:#00a000>Printf</span>(<span style=color:#b44>&#34;put key:%s value:%s&#34;</span>, putResp.PrevKv.Key, putResp.PrevKv.Value)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#080;font-style:italic>// 获取key相关的value
+</span></span></span><span style=display:flex><span><span style=color:#080;font-style:italic></span><span style=color:#a2f;font-weight:700>func</span> <span style=color:#00a000>Get</span>(c <span style=color:#666>*</span>clientv3.Client, key <span style=color:#0b0;font-weight:700>string</span>) {
+</span></span><span style=display:flex><span>	ctx, cancel <span style=color:#666>:=</span> context.<span style=color:#00a000>WithTimeout</span>(context.<span style=color:#00a000>Background</span>(), time.Second)
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>defer</span> <span style=color:#00a000>cancel</span>()
+</span></span><span style=display:flex><span>	getResp, err <span style=color:#666>:=</span> c.<span style=color:#00a000>Get</span>(ctx, key)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>if</span> err <span style=color:#666>!=</span> <span style=color:#a2f;font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		fmt.<span style=color:#00a000>Println</span>(<span style=color:#b44>&#34;etcd get err =&gt; &#34;</span>, err)
+</span></span><span style=display:flex><span>		<span style=color:#a2f;font-weight:700>return</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>for</span> _, v <span style=color:#666>:=</span> <span style=color:#a2f;font-weight:700>range</span> getResp.Kvs {
+</span></span><span style=display:flex><span>		fmt.<span style=color:#00a000>Printf</span>(<span style=color:#b44>&#34;k %s v %s\n&#34;</span>, v.Key, v.Value)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#080;font-style:italic>// 删除key
+</span></span></span><span style=display:flex><span><span style=color:#080;font-style:italic></span><span style=color:#a2f;font-weight:700>func</span> <span style=color:#00a000>Del</span>(c <span style=color:#666>*</span>clientv3.Client, key <span style=color:#0b0;font-weight:700>string</span>) {
+</span></span><span style=display:flex><span>	ctx, cancel <span style=color:#666>:=</span> context.<span style=color:#00a000>WithTimeout</span>(context.<span style=color:#00a000>Background</span>(), time.Second)
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>defer</span> <span style=color:#00a000>cancel</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	delResp, err <span style=color:#666>:=</span> c.<span style=color:#00a000>Delete</span>(ctx, key)
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>if</span> err <span style=color:#666>!=</span> <span style=color:#a2f;font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		fmt.<span style=color:#00a000>Println</span>(<span style=color:#b44>&#34;etcd del err =&gt; &#34;</span>, err)
+</span></span><span style=display:flex><span>		<span style=color:#a2f;font-weight:700>return</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	fmt.<span style=color:#00a000>Println</span>(<span style=color:#b44>&#34;del result =&gt; &#34;</span>, delResp.Deleted)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#080;font-style:italic>// 监听key的删除更新事件
+</span></span></span><span style=display:flex><span><span style=color:#080;font-style:italic></span><span style=color:#a2f;font-weight:700>func</span> <span style=color:#00a000>Watch</span>(c <span style=color:#666>*</span>clientv3.Client, key <span style=color:#0b0;font-weight:700>string</span>) {
+</span></span><span style=display:flex><span>	watchCh <span style=color:#666>:=</span> c.<span style=color:#00a000>Watch</span>(context.<span style=color:#00a000>Background</span>(), key)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a2f;font-weight:700>for</span> resp <span style=color:#666>:=</span> <span style=color:#a2f;font-weight:700>range</span> watchCh {
+</span></span><span style=display:flex><span>		<span style=color:#a2f;font-weight:700>for</span> _, ev <span style=color:#666>:=</span> <span style=color:#a2f;font-weight:700>range</span> resp.Events {
+</span></span><span style=display:flex><span>			fmt.<span style=color:#00a000>Printf</span>(<span style=color:#b44>&#34;event =&gt; %s, key =&gt; %s, value =&gt; %s&#34;</span>, ev.Type, ev.Kv.Key, ev.Kv.Value)
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div></div><footer class=post-footer><div class=post-tags><a href=/tags/golang rel=tag title=golang>#golang#</a></div><div class=addthis_inline_share_toolbox></div><div class=post-nav><div class=article-copyright><div class=article-copyright-img><img src=/img/qq_qrcode.png width=129px height=129px><div style=text-align:center>QQ扫一扫交流</div></div><div class=article-copyright-info><p><span>标题：</span>Etcd在go中的使用</p><p><span>链接：</span>/post/golang/etcd/</p><p><span>作者：</span>玄武</p><p><span>声明： </span>本博客文章除特别声明外，均采用 <a href=https://creativecommons.org/licenses/by-nc-sa/3.0/ target=_blank style=text-decoration:underline>CC BY-NC-SA 3.0</a>许可协议，转载请注明出处！</p></div></div><div class=clear></div></div><div class=reward-qr-info><div>创作实属不易，如有帮助，那就打赏博主些许茶钱吧 ^_^</div><button id=rewardButton disable=enable onclick='var qr=document.getElementById("QR");qr.style.display==="none"?qr.style.display="block":qr.style.display="none"'>
+<span>赏</span></button><div id=QR style=display:none><div id=wechat style=display:inline-block><img id=wechat_qr src=/img/wechat-pay.png alt="WeChat Pay"><p>微信打赏</p></div><div id=alipay style=display:inline-block><img id=alipay_qr src=/img/ali-pay.png alt=Alipay><p>支付宝打赏</p></div></div></div><div class=post-nav><div class="post-nav-next post-nav-item"><a href=/post/golang/gorm-mock/ rel=next title=GormV2-Mock单元测试><i class="fa fa-chevron-left"></i> GormV2-Mock单元测试</a></div><div class="post-nav-prev post-nav-item"><a href=/post/golang/gotests/ rel=prev title=gotests单元测试>gotests单元测试
+<i class="fa fa-chevron-right"></i></a></div></div><div id=wcomments></div></footer></article></section></div></div><div class=sidebar-toggle><div class=sidebar-toggle-line-wrap><span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+<span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+<span class="sidebar-toggle-line sidebar-toggle-line-last"></span></div></div><aside id=sidebar class=sidebar><div class=sidebar-inner><section class="site-overview sidebar-panel sidebar-panel-active"><div class="site-author motion-element" itemprop=author itemscope itemtype=http://schema.org/Person><img class=site-author-image itemprop=image src=/img/avatar.png alt=玄武><p class=site-author-name itemprop=name>玄武</p><p class="site-description motion-element" itemprop=description>爱我所爱 行我所行 无问西东</p></div><nav class="site-state motion-element"><div class="site-state-item site-state-posts"><a href=/post/><span class=site-state-item-count>12</span>
+<span class=site-state-item-name>日志</span></a></div><div class="site-state-item site-state-categories"><a href=/categories/><span class=site-state-item-count>2</span>
+<span class=site-state-item-name>分类</span></a></div><div class="site-state-item site-state-tags"><a href=/tags/><span class=site-state-item-count>7</span>
+<span class=site-state-item-name>标签</span></a></div></nav><div class="links-of-author motion-element"><span class=links-of-author-item><a href=https://github.com/littleqiang-go target=_blank title=GitHub><i class="fa fa-fw fa-github"></i>
+GitHub</a></span>
+<span class=links-of-author-item><a href=https://www.zhihu.com/people/kobechen-46 target=_blank title=知乎><i class="fa fa-fw fa-globe"></i>
+知乎</a></span></div><div class="links-of-blogroll motion-element links-of-blogroll-inline"><div class=links-of-blogroll-title><i class="fa fa-fw fa-globe"></i>
+友情链接</div><ul class=links-of-blogroll-list><li class=links-of-blogroll-item><a href title=玄武 target=_blank>玄武</a></li></ul></div><div class="tagcloud-of-blogroll motion-element tagcloud-of-blogroll-inline"><div class=tagcloud-of-blogroll-title><i class="fa fa-fw fa-tags"></i>
+标签云</div><ul class=tagcloud-of-blogroll-list><li class=tagcloud-of-blogroll-item><a href=/tags/golang>Golang
+<sup>6</sup></a></li><li class=tagcloud-of-blogroll-item><a href=/tags/docker>Docker
+<sup>2</sup></a></li><li class=tagcloud-of-blogroll-item><a href=/tags/emoji>Emoji
+<sup>1</sup></a></li><li class=tagcloud-of-blogroll-item><a href=/tags/markdown>Markdown
+<sup>1</sup></a></li><li class=tagcloud-of-blogroll-item><a href=/tags/privacy>Privacy
+<sup>1</sup></a></li><li class=tagcloud-of-blogroll-item><a href=/tags/shortcodes>Shortcodes
+<sup>1</sup></a></li><li class=tagcloud-of-blogroll-item><a href=/tags/text>Text
+<sup>1</sup></a></li></ul></div></section></div></aside></div></main><footer id=footer class=footer><div class=footer-inner><div class=copyright><span class=copyright-year>&copy; 2010 - 2022</span>
+<span class=with-love><i class="fa fa-heart"></i></span>
+<span class=copyright-author>孤独前行</span></div><div class=powered-info><span class=powered-by>Powered by - <a class=powered-link href=//gohugo.io target=_blank title=hugo>Hugo v0.104.0-DEV</a></span>
+<span class=separator-line>/</span>
+<span class=theme-info>Theme by - <a class=powered-link href=//github.com/elkan1788/hugo-theme-next target=_blank>NexT</a></span></div><div class=vistor-info><script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<span class=site-uv><i class="fa fa-user"></i>
+<span class=busuanzi-value id=busuanzi_value_site_uv></span></span>
+<span class=separator-line>/</span>
+<span class=site-pv><i class="fa fa-eye"></i>
+<span class=busuanzi-value id=busuanzi_value_site_pv></span></span></div><div class=license-info><span class=storage-info>Storage by
+<a href=https://gitee.com/ style=font-weight:700 target=_blank>Gitee 仓库</a></span>
+<span class=separator-line>/</span>
+<span class=license-num><a href=http://beian.miit.gov.cn target=_blank>粤 ICP 备 18047355 号</a></span></div></div></footer><div class=back-to-top><i class="fa fa-arrow-up"></i>
+<span id=scrollpercent><span>0</span>%</span></div></div><script type=text/javascript src=//unpkg.com/jquery@2.1.4/dist/jquery.min.js></script>
+<script type=text/javascript src=/js/search.js></script>
+<script type=text/javascript src=/js/affix.js></script>
+<script type=text/javascript>function detectIE(){var e=window.navigator.userAgent,t=e.indexOf("MSIE "),n=e.indexOf("Trident/"),s=e.indexOf("Edge/");return t>0||n>0||s>0?-1:1}function getCntViewHeight(){var t=$("#content").height(),e=$(window).height(),n=t>e?t-e:$(document).height()-e;return n}function getScrollbarWidth(){var e=$("<div />").addClass("scrollbar-measure").prependTo("body"),t=e[0],n=t.offsetWidth-t.clientWidth;return e.remove(),n}function registerBackTop(){var t=50,e=$(".back-to-top");$(window).on("scroll",function(){e.toggleClass("back-to-top-on",window.pageYOffset>t);var s=$(window).scrollTop(),o=getCntViewHeight(),i=s/o,n=Math.round(i*100),a=n>100?100:n;$("#scrollpercent>span").html(a)}),e.on("click",function(){$("html,body").animate({scrollTop:0,screenLeft:0},800)})}function initScrollSpy(){var e=".post-toc",s=$(e),t=".active-current";s.on("activate.bs.scrollspy",function(){var t=$(e+" .active").last();n(),t.addClass("active-current")}).on("clear.bs.scrollspy",n),$("body").scrollspy({target:e});function n(){$(e+" "+t).removeClass(t.substring(1))}}function initAffix(){var e=$(".header-inner").height(),t=parseInt($(".footer").outerHeight(!0),10),n=e+10;$(".sidebar-inner").affix({offset:{top:n,bottom:t}})}function initTOCDimension(){$(window).on("resize",function(){e&&clearTimeout(e),e=setTimeout(function(){var e=document.body.clientHeight-100;updateTOCHeight(e)},0)}),updateTOCHeight(document.body.clientHeight-100);var e,t=getScrollbarWidth();$(".post-toc").css("width","calc(100% + "+t+"px)")}function updateTOCHeight(e){e=e||"auto",$(".post-toc").css("max-height",e)}$(function(){var e,t,n,s,o=$(".header-inner").height()+10;$("#sidebar").css({"margin-top":o}).show(),t=parseInt($("#sidebar").css("margin-top")),n=parseInt($(".sidebar-inner").css("height")),e=t+n,s=$(".content-wrap").height(),s<e&&$(".content-wrap").css("min-height",e),$(".site-nav-toggle").on("click",function(){var e=$(".site-nav"),o=$(".toggle"),t="site-nav-on",i="toggle-close",n=e.hasClass(t),a=n?"slideUp":"slideDown",s=n?"removeClass":"addClass";e.stop()[a]("normal",function(){e[s](t),o[s](i)})}),registerBackTop(),initAffix(),initTOCDimension(),$(".sidebar-nav-toc").click(function(){$(this).addClass("sidebar-nav-active"),$(this).next().removeClass("sidebar-nav-active"),$("."+$(this).next().attr("data-target")).toggle(500),$("."+$(this).attr("data-target")).toggle(500)}),$(".sidebar-nav-overview").click(function(){$(this).addClass("sidebar-nav-active"),$(this).prev().removeClass("sidebar-nav-active"),$("."+$(this).prev().attr("data-target")).toggle(500),$("."+$(this).attr("data-target")).toggle(500)})})</script><script src=//unpkg.com/imageviewer@1.1.0/dist/viewer.min.js></script>
+<script type=text/javascript>$(function(){$(".post-body").viewer()})</script><script type=text/javascript>const locale={placeholder:"欢迎留下您的宝贵建议，请填写您的昵称和邮箱便于后续交流. ^_^"};$(function(){detectIE()>0?$.getScript(document.location.protocol+"//unpkg.com/@waline/client@1.6.0/dist/Waline.min.js",function(){new Waline({el:"#wcomments",visitor:!0,emoji:[],wordLimit:"200",uploadImage:!1,locale,requiredMeta:["nick","mail"],serverURL:"Your WalineSerURL",lang:"zh-cn"})}):$("#wcomments").html("抱歉，Waline插件不支持IE或Edge，建议使用Chrome浏览器。")})</script><script type=text/javascript src="//s7.addthis.com/js/300/addthis_widget.js#pubid=Your%20AddthisId"></script>
+<script>(function(){var t,e=document.createElement("script"),n=window.location.protocol.split(":")[0];n==="https"?e.src="https://zz.bdstatic.com/linksubmit/push.js":e.src="http://push.zhanzhang.baidu.com/push.js",t=document.getElementsByTagName("script")[0],t.parentNode.insertBefore(e,t)})()</script></body></html>
